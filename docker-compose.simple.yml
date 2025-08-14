@@ -1,0 +1,40 @@
+# Simplified Docker Compose for Windows Development
+services:
+  # Claude Code Dashboard Backend
+  dashboard-backend:
+    build: 
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DISABLE_AUTH=true
+      - SECRET_KEY=development-secret-key
+      - DASHBOARD_USERNAME=admin
+      - DASHBOARD_PASSWORD=admin
+      - LOG_LEVEL=INFO
+    volumes:
+      # Persist data
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # Claude Code Dashboard Frontend  
+  dashboard-frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    depends_on:
+      - dashboard-backend
+    restart: unless-stopped
+
+# Usage:
+# docker-compose -f docker-compose.simple.yml up --build
+# 
+# This version:
+# - Skips Docker socket mounting (no container discovery)
+# - Uses simplified configuration
+# - Works better on Windows development setups

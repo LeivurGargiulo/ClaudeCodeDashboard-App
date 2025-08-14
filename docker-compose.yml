@@ -1,0 +1,68 @@
+services:
+  # Claude Code Dashboard Backend
+  dashboard-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DISABLE_AUTH=false
+      - SECRET_KEY=your-secret-key-change-in-production
+      - DASHBOARD_USERNAME=admin
+      - DASHBOARD_PASSWORD=claude-dashboard-2024
+    volumes:
+      # Mount Docker socket for container discovery
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Persist instance configurations and chat history
+      - ./data:/app/data
+    restart: unless-stopped
+    networks:
+      - claude-network
+
+  # Claude Code Dashboard Frontend
+  dashboard-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    depends_on:
+      - dashboard-backend
+    restart: unless-stopped
+    networks:
+      - claude-network
+
+  # Example Claude Code instance (for testing)
+  claude-instance-1:
+    image: anthropic/claude-code:latest  # Replace with actual Claude Code image
+    ports:
+      - "8001:8000"
+    environment:
+      - CLAUDE_API_KEY=your-claude-api-key
+    restart: unless-stopped
+    networks:
+      - claude-network
+    profiles:
+      - example  # This service won't start by default
+
+networks:
+  claude-network:
+    driver: bridge
+
+volumes:
+  dashboard-data:
+    driver: local
+
+# To run only the dashboard:
+# docker-compose up dashboard-backend dashboard-frontend
+
+# To run with example Claude instance:
+# docker-compose --profile example up
+
+# For development with hot reload:
+# docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
