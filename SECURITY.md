@@ -9,40 +9,6 @@ We actively support the following versions with security updates:
 | 1.x.x   | :white_check_mark: |
 | < 1.0   | :x:                |
 
-## Reporting a Vulnerability
-
-We take security vulnerabilities seriously. If you discover a security vulnerability, please follow these steps:
-
-### Private Reporting
-
-**Please do NOT create a public GitHub issue for security vulnerabilities.**
-
-Instead, please report security vulnerabilities by:
-
-1. **Email**: Send details to [security@your-domain.com] (replace with actual email)
-2. **GitHub Security Advisories**: Use the "Security" tab in the repository
-3. **Encrypted Communication**: Use our PGP key if available
-
-### What to Include
-
-When reporting a vulnerability, please include:
-
-- **Description** of the vulnerability
-- **Steps to reproduce** the issue
-- **Potential impact** of the vulnerability
-- **Suggested fix** (if you have one)
-- **Your contact information** for follow-up
-
-### Response Timeline
-
-- **Initial Response**: Within 48 hours
-- **Status Update**: Within 1 week
-- **Fix Timeline**: Depends on severity
-  - Critical: Within 24-48 hours
-  - High: Within 1 week
-  - Medium: Within 2 weeks
-  - Low: Next regular release
-
 ## Security Considerations
 
 ### Authentication
@@ -160,4 +126,4 @@ We appreciate security researchers and community members who help improve the se
 
 ---
 
-**Last Updated**: 2024-08-14
+**Last Updated**: 2025-08-14

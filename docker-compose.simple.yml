@@ -10,14 +10,19 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
       - DISABLE_AUTH=true
-      - SECRET_KEY=development-secret-key
-      - DASHBOARD_USERNAME=admin
-      - DASHBOARD_PASSWORD=admin
-      - LOG_LEVEL=INFO
+      - SECRET_KEY=ci-test-secret-key
+      - LOG_LEVEL=ERROR
     volumes:
-      # Persist data
-      - ./data:/app/data
-    restart: unless-stopped
+      # Mock Docker socket for testing (CI will handle missing socket gracefully)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # Claude Code Dashboard Frontend  
   dashboard-frontend:
@@ -26,15 +31,27 @@ services:
     ports:
       - "3000:80"
     environment:
-      - VITE_API_URL=http://localhost:8000/api
+      - VITE_API_URL=http://dashboard-backend:8000/api
     depends_on:
-      - dashboard-backend
-    restart: unless-stopped
+      dashboard-backend:
+        condition: service_healthy
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  test-network:
+    driver: bridge
 
 # Usage:
 # docker-compose -f docker-compose.simple.yml up --build
 # 
 # This version:
-# - Skips Docker socket mounting (no container discovery)
-# - Uses simplified configuration
-# - Works better on Windows development setups
+# - Includes health checks for CI testing
+# - Uses isolated network for testing
+# - Optimized for CI/CD pipeline

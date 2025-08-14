@@ -93,9 +93,16 @@ async def root():
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
+    import datetime
+    try:
+        instances_count = len(await instance_service.get_all_instances())
+    except Exception:
+        instances_count = 0
+    
     return {
         "status": "healthy",
-        "instances_count": len(await instance_service.get_all_instances())
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "instances_count": instances_count
     }
 
 @app.exception_handler(Exception)

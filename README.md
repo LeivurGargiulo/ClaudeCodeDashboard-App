@@ -191,7 +191,7 @@ docker-compose --env-file .env.production up -d
 | `DISABLE_AUTH` | `false` | Disable authentication (development only) |
 | `SECRET_KEY` | `claude-code-dashboard-secret-key` | JWT secret key |
 | `DASHBOARD_USERNAME` | `admin` | Default admin username |
-| `DASHBOARD_PASSWORD` | `claude-dashboard-2024` | Default admin password |
+| `DASHBOARD_PASSWORD` | `claude-dashboard` | Default admin password |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` | Token expiration time (24 hours) |
 
 ### Authentication
