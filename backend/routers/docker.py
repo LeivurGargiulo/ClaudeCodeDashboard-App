@@ -7,15 +7,21 @@ import os
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, status
 
-from docker_manager import DockerManager
 from auth import get_current_user_optional
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Global Docker manager
-docker_manager = DockerManager()
+# Global Docker manager will be set by main.py
+docker_manager = None
+
+def set_docker_manager(manager):
+    global docker_manager
+    docker_manager = manager
+
+def get_docker_manager():
+    return docker_manager
 
 
 @router.get("/status")
@@ -24,17 +30,31 @@ async def get_docker_status(
 ):
     """Get Docker daemon status."""
     try:
-        is_available = docker_manager.is_available()
+        # Create a fresh Docker manager for testing
+        from docker_manager import DockerManager
+        test_mgr = DockerManager()
+        is_available = test_mgr.is_available()
+        
+        # Get the set manager
+        docker_mgr = get_docker_manager()
+        
+        logger.info(f"Docker status check: available={is_available}, mgr_from_router={docker_mgr is not None}, os.name={os.name}")
         return {
             "available": is_available,
             "status": "connected" if is_available else "disconnected",
-            "platform": "windows" if os.name == 'nt' else "linux"
+            "platform": "windows" if os.name == 'nt' else "linux",
+            "debug": {
+                "test_manager_available": is_available,
+                "test_manager_cli_fallback": test_mgr.use_cli_fallback,
+                "router_manager_set": docker_mgr is not None,
+                "os_name": os.name
+            }
         }
     except Exception as e:
         logger.error(f"Error checking Docker status: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check Docker status"
+            detail=f"Failed to check Docker status: {str(e)}"
         )
 
 
@@ -44,7 +64,7 @@ async def reconnect_docker(
 ):
     """Retry Docker daemon connection."""
     try:
-        success = docker_manager.retry_connection()
+        success = get_docker_manager().retry_connection()
         if success:
             return {
                 "success": True,
@@ -71,13 +91,13 @@ async def list_containers(
 ):
     """List all Docker containers."""
     try:
-        if not docker_manager.is_available():
+        if not get_docker_manager().is_available():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Docker is not available"
             )
         
-        containers = await docker_manager.list_all_containers()
+        containers = await get_docker_manager().list_all_containers()
         return containers
         
     except HTTPException:
@@ -96,13 +116,13 @@ async def discover_claude_containers(
 ):
     """Discover containers that might be running Claude Code."""
     try:
-        if not docker_manager.is_available():
+        if not get_docker_manager().is_available():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Docker is not available"
             )
         
-        instances = await docker_manager.discover_claude_containers()
+        instances = await get_docker_manager().discover_claude_containers()
         return {
             "discovered_count": len(instances),
             "instances": instances
@@ -125,13 +145,13 @@ async def get_container_info(
 ):
     """Get detailed information about a specific container."""
     try:
-        if not docker_manager.is_available():
+        if not get_docker_manager().is_available():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Docker is not available"
             )
         
-        container_info = await docker_manager.get_container_info(container_id)
+        container_info = await get_docker_manager().get_container_info(container_id)
         
         if "error" in container_info:
             if "not found" in container_info["error"].lower():
@@ -164,13 +184,13 @@ async def start_container(
 ):
     """Start a stopped container."""
     try:
-        if not docker_manager.is_available():
+        if not get_docker_manager().is_available():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Docker is not available"
             )
         
-        result = await docker_manager.start_container(container_id)
+        result = await get_docker_manager().start_container(container_id)
         
         if not result["success"]:
             if "not found" in result["error"].lower():
@@ -204,13 +224,13 @@ async def stop_container(
 ):
     """Stop a running container."""
     try:
-        if not docker_manager.is_available():
+        if not get_docker_manager().is_available():
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Docker is not available"
             )
         
-        result = await docker_manager.stop_container(container_id)
+        result = await get_docker_manager().stop_container(container_id)
         
         if not result["success"]:
             if "not found" in result["error"].lower():

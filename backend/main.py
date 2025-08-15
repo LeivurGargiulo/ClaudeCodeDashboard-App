@@ -18,7 +18,6 @@ from fastapi.responses import JSONResponse
 
 from models.instance import Instance, InstanceCreate, InstanceUpdate
 from models.chat import ChatMessage, ChatResponse
-from routers import instances, chat, docker, usage
 from auth import verify_token
 from services.instance_service import InstanceService
 from logging_config import setup_default_logging, get_loggers, LoggerMixin
@@ -32,8 +31,15 @@ loggers = get_loggers()
 # Security
 security = HTTPBearer(auto_error=False)
 
-# Global instance service
+# Global services
 instance_service = InstanceService()
+
+# Import and create global Docker manager
+from docker_manager import DockerManager
+docker_manager = DockerManager()
+
+# Import routers after creating docker_manager
+from routers import instances, chat, docker, usage
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -75,6 +81,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Set Docker manager in the router to avoid circular imports
+docker.set_docker_manager(docker_manager)
 
 # Include routers
 app.include_router(instances.router, prefix="/api/instances", tags=["instances"])
