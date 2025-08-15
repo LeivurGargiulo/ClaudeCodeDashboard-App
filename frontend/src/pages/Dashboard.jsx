@@ -10,7 +10,8 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  BarChart3
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { instancesApi, dockerApi, apiUtils } from '../api/client'
@@ -189,7 +190,10 @@ const Dashboard = () => {
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
-              <Link to="/settings" className="btn btn-outline btn-sm">
+              <Link to="/analytics" className="btn btn-outline btn-sm" title="Analytics">
+                <BarChart3 className="h-4 w-4" />
+              </Link>
+              <Link to="/settings" className="btn btn-outline btn-sm" title="Settings">
                 <Settings className="h-4 w-4" />
               </Link>
             </div>

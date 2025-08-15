@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from models.instance import Instance, InstanceCreate, InstanceUpdate
 from models.chat import ChatMessage, ChatResponse
-from routers import instances, chat, docker
+from routers import instances, chat, docker, usage
 from auth import verify_token
 from services.instance_service import InstanceService
 from logging_config import setup_default_logging, get_loggers, LoggerMixin
@@ -56,7 +56,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Claude Code Dashboard",
     description="A web dashboard for managing multiple Claude Code instances",
-    version="1.0.0",
+    version="1.1.0",
     lifespan=lifespan
 )
 
@@ -80,13 +80,14 @@ app.add_middleware(
 app.include_router(instances.router, prefix="/api/instances", tags=["instances"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(docker.router, prefix="/api/docker", tags=["docker"])
+app.include_router(usage.router, prefix="/api", tags=["usage"])
 
 @app.get("/")
 async def root():
     """Root endpoint with basic application info."""
     return {
         "name": "Claude Code Dashboard",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "description": "Web dashboard for managing Claude Code instances"
     }
 

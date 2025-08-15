@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import Dashboard from './pages/Dashboard'
 import InstanceDetails from './pages/InstanceDetails'
 import Settings from './pages/Settings'
+import Analytics from './pages/Analytics'
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/instance/:id" element={<InstanceDetails />} />
+        <Route path="/analytics" element={<Analytics />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
       <Toaster 

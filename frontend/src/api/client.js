@@ -139,6 +139,50 @@ export const healthApi = {
   getInfo: () => api.get('/'),
 };
 
+// Usage tracking and analytics API
+export const usageApi = {
+  // Track usage
+  trackUsage: (data) => api.post('/usage/track', data),
+  
+  // Get usage entries
+  getEntries: (params) => api.get('/usage/entries', { params }),
+  
+  // Get usage aggregation
+  getAggregation: (params) => api.get('/usage/aggregation', { params }),
+  
+  // Get current usage stats
+  getStats: () => api.get('/usage/stats'),
+  
+  // Get usage timeline for charts
+  getTimeline: (params) => api.get('/usage/timeline', { params }),
+  
+  // Get model usage breakdown
+  getModelBreakdown: (params) => api.get('/usage/models', { params }),
+  
+  // Export usage data
+  exportData: (data) => api.post('/usage/export', data),
+  
+  // Download export file
+  downloadExport: (filename) => api.get(`/usage/download/${filename}`, {
+    responseType: 'blob'
+  }),
+  
+  // Get model pricing
+  getPricing: () => api.get('/usage/pricing'),
+  
+  // Update model pricing
+  updatePricing: (data) => api.put('/usage/pricing', data),
+  
+  // Get usage config
+  getConfig: () => api.get('/usage/config'),
+  
+  // Update usage config
+  updateConfig: (data) => api.put('/usage/config', data),
+  
+  // Cleanup old data
+  cleanup: (params) => api.delete('/usage/cleanup', { params }),
+};
+
 // Authentication API (if needed)
 export const authApi = {
   // Login (placeholder - implement if authentication is enabled)
