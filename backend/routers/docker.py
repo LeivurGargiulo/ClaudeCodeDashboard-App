@@ -25,30 +25,17 @@ def get_docker_manager():
 
 
 @router.get("/status")
-async def get_docker_status(
-    current_user: dict = Depends(get_current_user_optional)
-):
+async def get_docker_status(current_user: dict = Depends(get_current_user_optional)):
     """Get Docker daemon status."""
     try:
-        # Create a fresh Docker manager for testing
         from docker_manager import DockerManager
         test_mgr = DockerManager()
         is_available = test_mgr.is_available()
         
-        # Get the set manager
-        docker_mgr = get_docker_manager()
-        
-        logger.info(f"Docker status check: available={is_available}, mgr_from_router={docker_mgr is not None}, os.name={os.name}")
         return {
             "available": is_available,
-            "status": "connected" if is_available else "disconnected",
-            "platform": "windows" if os.name == 'nt' else "linux",
-            "debug": {
-                "test_manager_available": is_available,
-                "test_manager_cli_fallback": test_mgr.use_cli_fallback,
-                "router_manager_set": docker_mgr is not None,
-                "os_name": os.name
-            }
+            "status": "connected" if is_available else "disconnected", 
+            "platform": "windows" if os.name == 'nt' else "linux"
         }
     except Exception as e:
         logger.error(f"Error checking Docker status: {e}")
