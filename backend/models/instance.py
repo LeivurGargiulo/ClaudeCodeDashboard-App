@@ -5,7 +5,7 @@ Data models for Claude Code instances.
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class InstanceType(str, Enum):
@@ -35,20 +35,24 @@ class Instance(BaseModel):
     last_seen: Optional[datetime] = Field(None, description="Last successful connection")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     
-    @validator('url', always=True)
-    def build_url(cls, v, values):
+    @field_validator('url', mode='before')
+    @classmethod
+    def build_url(cls, v, info):
         """Automatically build URL from host and port if not provided."""
-        if not v and 'host' in values and 'port' in values:
-            protocol = "https" if values['port'] == 443 else "http"
-            return f"{protocol}://{values['host']}:{values['port']}"
+        if not v and info.data:
+            host = info.data.get('host')
+            port = info.data.get('port')
+            if host and port:
+                protocol = "https" if port == 443 else "http"
+                return f"{protocol}://{host}:{port}"
         return v
     
-    class Config:
-        """Pydantic model configuration."""
-        use_enum_values = True
-        json_encoders = {
+    model_config = {
+        "use_enum_values": True,
+        "json_encoders": {
             datetime: lambda v: v.isoformat() if v else None
         }
+    }
 
 
 class InstanceCreate(BaseModel):
@@ -77,9 +81,9 @@ class InstanceHealth(BaseModel):
     error_message: Optional[str] = None
     last_checked: datetime = Field(default_factory=datetime.now)
     
-    class Config:
-        """Pydantic model configuration."""
-        use_enum_values = True
-        json_encoders = {
+    model_config = {
+        "use_enum_values": True,
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }

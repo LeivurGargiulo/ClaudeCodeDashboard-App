@@ -27,6 +27,8 @@ class TokenType(str, Enum):
 
 class UsageEntry(BaseModel):
     """Individual token usage entry."""
+    model_config = {"protected_namespaces": []}
+    
     id: str = Field(..., description="Unique usage entry ID")
     instance_id: str = Field(..., description="Instance that generated the usage")
     session_id: Optional[str] = Field(None, description="Chat session ID")
@@ -35,7 +37,7 @@ class UsageEntry(BaseModel):
     
     # Model information
     model: ModelType = Field(..., description="Claude model used")
-    model_version: Optional[str] = Field(None, description="Specific model version")
+    claude_model_version: Optional[str] = Field(None, description="Specific model version")
     
     # Token counts
     input_tokens: int = Field(default=0, description="Input tokens used")
@@ -59,15 +61,17 @@ class UsageEntry(BaseModel):
     ip_address: Optional[str] = Field(None, description="Client IP address")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class UsageAggregation(BaseModel):
     """Aggregated usage statistics."""
+    model_config = {"protected_namespaces": []}
+    
     period_start: datetime = Field(..., description="Start of aggregation period")
     period_end: datetime = Field(..., description="End of aggregation period")
     instance_id: Optional[str] = Field(None, description="Instance ID if filtered")
@@ -92,18 +96,18 @@ class UsageAggregation(BaseModel):
     unique_instances: int = Field(default=0, description="Number of unique instances")
     
     # Model breakdown
-    model_usage: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Usage by model")
+    claude_model_usage: Dict[str, Dict[str, Any]] = Field(default_factory=dict, description="Usage by model")
     
     # Efficiency metrics
     avg_tokens_per_request: float = Field(default=0.0, description="Average tokens per request")
     avg_cost_per_request: float = Field(default=0.0, description="Average cost per request")
     cache_hit_rate: float = Field(default=0.0, description="Cache hit rate percentage")
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class UsageQuery(BaseModel):
@@ -122,11 +126,11 @@ class UsageQuery(BaseModel):
     offset: int = Field(default=0, description="Result offset")
     limit: int = Field(default=100, description="Result limit")
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class UsageStats(BaseModel):
@@ -158,11 +162,11 @@ class UsageStats(BaseModel):
     daily_average_tokens: int = Field(default=0, description="Daily average tokens")
     trend_direction: str = Field(default="stable", description="Usage trend: increasing, decreasing, stable")
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class ExportFormat(str, Enum):
@@ -180,11 +184,11 @@ class UsageExport(BaseModel):
     include_aggregations: bool = Field(True, description="Include aggregated statistics")
     filename: Optional[str] = Field(None, description="Custom filename")
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 # Model pricing configuration (can be updated via API)

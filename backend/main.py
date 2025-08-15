@@ -127,6 +127,9 @@ async def global_exception_handler(request, exc):
 if __name__ == "__main__":
     import uvicorn
     
+    # Reduce watchfiles logging spam
+    logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
+    
     # Configuration from environment variables
     host = os.getenv("HOST", "0.0.0.0")  # Bind to all interfaces for Tailscale
     port = int(os.getenv("PORT", "8000"))
@@ -137,5 +140,7 @@ if __name__ == "__main__":
         host=host,
         port=port,
         reload=True,
-        log_level="info"
+        log_level="info",
+        reload_delay=1.0,  # Reduce sensitivity to file changes
+        reload_excludes=["*.log", "*.tmp", "*.pyc", "__pycache__/*"]
     )

@@ -33,12 +33,12 @@ class ChatMessage(BaseModel):
     status: MessageStatus = Field(default=MessageStatus.PENDING, description="Message status")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     
-    class Config:
-        """Pydantic model configuration."""
-        use_enum_values = True
-        json_encoders = {
+    model_config = {
+        "use_enum_values": True,
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class ChatRequest(BaseModel):
@@ -60,11 +60,11 @@ class ChatResponse(BaseModel):
     error: Optional[str] = Field(None, description="Error message if any")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional response metadata")
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class ChatHistory(BaseModel):
@@ -74,11 +74,11 @@ class ChatHistory(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now, description="History creation time")
     updated_at: datetime = Field(default_factory=datetime.now, description="Last update time")
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class ChatSession(BaseModel):
@@ -90,8 +90,8 @@ class ChatSession(BaseModel):
     last_activity: datetime = Field(default_factory=datetime.now, description="Last activity time")
     message_count: int = Field(default=0, description="Number of messages in session")
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
