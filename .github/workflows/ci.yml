@@ -139,10 +139,11 @@ jobs:
         docker-compose -f docker-compose.simple.yml build
         docker-compose -f docker-compose.simple.yml up -d
         echo "Waiting for services to be healthy..."
-        timeout 120 sh -c 'until docker-compose -f docker-compose.simple.yml ps | grep -q healthy; do sleep 5; done'
-        sleep 10
-        curl -f http://localhost:8000/api/health || (docker-compose -f docker-compose.simple.yml logs && exit 1)
-        curl -f http://localhost:3000 || (docker-compose -f docker-compose.simple.yml logs && exit 1)
+        timeout 180 sh -c 'until [ "$(docker-compose -f docker-compose.simple.yml ps --services --filter="status=healthy" | wc -l)" -eq 2 ]; do echo "Waiting..."; sleep 10; done'
+        echo "Services are healthy, testing endpoints..."
+        curl -f http://localhost:8000/api/health || (echo "Backend health check failed"; docker-compose -f docker-compose.simple.yml logs dashboard-backend; exit 1)
+        curl -f http://localhost:3000/health || (echo "Frontend health check failed"; docker-compose -f docker-compose.simple.yml logs dashboard-frontend; exit 1)
+        echo "All tests passed!"
         docker-compose -f docker-compose.simple.yml down
 
   security-scan:
