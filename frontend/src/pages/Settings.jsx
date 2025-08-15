@@ -245,7 +245,7 @@ const Settings = () => {
                     <div className="text-sm text-yellow-700">
                       <p className="font-medium mb-1">Docker not available</p>
                       <p>
-                        Make sure Docker Desktop is running, then click "Reconnect Docker" above.
+                        Make sure Docker Desktop is running, then click &quot;Reconnect Docker&quot; above.
                         On Windows, Docker Desktop must be started and the engine must be running.
                       </p>
                     </div>
