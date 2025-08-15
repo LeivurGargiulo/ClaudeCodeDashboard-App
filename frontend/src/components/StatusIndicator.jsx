@@ -1,4 +1,4 @@
-import { Circle, AlertCircle, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { AlertCircle, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { clsx } from 'clsx'
 
 const StatusIndicator = ({ status, className, showText = true, size = 'sm' }) => {

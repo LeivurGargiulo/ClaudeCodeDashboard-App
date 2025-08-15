@@ -192,7 +192,7 @@ const UsageStatsBar = ({ stats }) => {
             <div className="text-sm">
               <p className="font-medium text-amber-800">Usage Warning</p>
               <p className="text-amber-700">
-                You're approaching your usage quotas. Consider monitoring your usage more closely 
+                You&apos;re approaching your usage quotas. Consider monitoring your usage more closely 
                 or adjusting your quotas to avoid service interruptions.
               </p>
             </div>

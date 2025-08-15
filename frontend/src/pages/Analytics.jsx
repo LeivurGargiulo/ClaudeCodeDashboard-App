@@ -4,12 +4,9 @@ import {
   TrendingUp, 
   DollarSign, 
   Zap, 
-  Download,
   Calendar,
   Filter,
   RefreshCw,
-  Clock,
-  Users,
   Activity
 } from 'lucide-react'
 import { usageApi, instancesApi } from '../api/client'

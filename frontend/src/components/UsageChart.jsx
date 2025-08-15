@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { 
   BarChart3, 
-  TrendingUp, 
   DollarSign, 
   Zap,
   Activity,

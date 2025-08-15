@@ -7,17 +7,14 @@ import {
   Settings, 
   Container,
   Monitor,
-  AlertCircle,
+  BarChart3,
   CheckCircle,
-  XCircle,
-  Clock,
-  BarChart3
+  XCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { instancesApi, dockerApi, apiUtils } from '../api/client'
 import InstanceCard from '../components/InstanceCard'
 import InstanceForm from '../components/InstanceForm'
-import StatusIndicator from '../components/StatusIndicator'
 
 const Dashboard = () => {
   const [instances, setInstances] = useState([])
