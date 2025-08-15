@@ -32,8 +32,11 @@ def test_docs_endpoint(client):
 
 def test_cors_headers(client):
     """Test CORS headers are present."""
-    response = client.options("/api/health")
+    # Test with a GET request since OPTIONS might not be allowed
+    response = client.get("/api/health", headers={"Origin": "http://localhost:3000"})
     assert response.status_code == 200
+    # Check for CORS headers
+    assert "access-control-allow-origin" in response.headers
 
 
 @patch('services.instance_service.InstanceService.load_instances')
