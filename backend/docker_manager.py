@@ -3,6 +3,9 @@ Docker manager for discovering and managing Claude Code containers.
 """
 
 import logging
+import subprocess
+import json
+import os
 from typing import List, Dict, Any, Optional
 import docker
 from docker.errors import DockerException, APIError, NotFound
@@ -18,6 +21,7 @@ class DockerManager:
     def __init__(self):
         """Initialize Docker manager."""
         self.client: Optional[docker.DockerClient] = None
+        self.use_cli_fallback = False
         self._connect()
     
     def _connect(self) -> bool:
@@ -51,18 +55,36 @@ class DockerManager:
                     logger.debug(f"Connection method {i+1} failed: {e}")
                     continue
             
-            # If all methods fail
-            logger.warning("Failed to connect to Docker daemon with all methods")
-            self.client = None
-            return False
+            # If all methods fail, try CLI fallback
+            logger.warning("Failed to connect to Docker daemon with Python library, trying CLI fallback")
+            if self._test_docker_cli():
+                logger.info("Docker CLI is available, using CLI fallback mode")
+                self.use_cli_fallback = True
+                return True
+            else:
+                logger.warning("Docker CLI also not available")
+                self.client = None
+                return False
             
         except Exception as e:
             logger.error(f"Unexpected error connecting to Docker: {e}")
             self.client = None
             return False
     
+    def _test_docker_cli(self) -> bool:
+        """Test if Docker CLI is available."""
+        try:
+            result = subprocess.run(['docker', 'version'], 
+                                  capture_output=True, text=True, timeout=10)
+            return result.returncode == 0
+        except Exception:
+            return False
+    
     def is_available(self) -> bool:
         """Check if Docker is available and connected."""
+        if self.use_cli_fallback:
+            return self._test_docker_cli()
+        
         if self.client is None:
             return False
         
@@ -91,6 +113,9 @@ class DockerManager:
             logger.warning("Docker not available for container discovery")
             return []
         
+        if self.use_cli_fallback:
+            return await self._discover_claude_containers_cli()
+        
         instances = []
         
         try:
@@ -112,6 +137,48 @@ class DockerManager:
             return []
         except Exception as e:
             logger.error(f"Unexpected error during container discovery: {e}")
+            return []
+    
+    async def _discover_claude_containers_cli(self) -> List[Instance]:
+        """Discover Claude containers using Docker CLI."""
+        instances = []
+        
+        try:
+            # Get all containers via CLI
+            result = subprocess.run(
+                ['docker', 'ps', '--all', '--format', 'json'],
+                capture_output=True, text=True, timeout=30
+            )
+            
+            if result.returncode != 0:
+                logger.error(f"Docker CLI ps failed: {result.stderr}")
+                return []
+            
+            # Parse container data
+            for line in result.stdout.strip().split('\n'):
+                if not line.strip():
+                    continue
+                    
+                try:
+                    container_data = json.loads(line)
+                    if self._is_claude_container_cli(container_data):
+                        instance = await self._container_data_to_instance(container_data)
+                        if instance:
+                            instances.append(instance)
+                            
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse container JSON: {e}")
+                except Exception as e:
+                    logger.error(f"Error processing container data: {e}")
+            
+            logger.info(f"Discovered {len(instances)} Claude Code containers via CLI")
+            return instances
+            
+        except subprocess.TimeoutExpired:
+            logger.error("Docker CLI command timed out")
+            return []
+        except Exception as e:
+            logger.error(f"Error discovering containers via CLI: {e}")
             return []
     
     def _is_claude_container(self, container) -> bool:
@@ -155,6 +222,111 @@ class DockerManager:
         except Exception as e:
             logger.error(f"Error checking if container is Claude instance: {e}")
             return False
+    
+    def _is_claude_container_cli(self, container_data: Dict[str, Any]) -> bool:
+        """
+        Determine if a container is likely a Claude Code instance (CLI version).
+        
+        Args:
+            container_data: Container data from Docker CLI JSON
+            
+        Returns:
+            True if container appears to be Claude Code
+        """
+        try:
+            # Check container name
+            name = container_data.get('Names', '').lower()
+            if any(keyword in name for keyword in ['claude', 'anthropic', 'claude-code']):
+                return True
+            
+            # Check image name
+            image = container_data.get('Image', '').lower()
+            if any(keyword in image for keyword in ['claude', 'anthropic']):
+                return True
+            
+            # Check for exposed ports that Claude Code typically uses
+            ports = container_data.get('Ports', '')
+            if any(port in ports for port in ['8000', '8080', '3000', '5000']):
+                return True
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error checking if container is Claude instance (CLI): {e}")
+            return False
+    
+    async def _container_data_to_instance(self, container_data: Dict[str, Any]) -> Optional[Instance]:
+        """
+        Convert Docker CLI container data to Instance model.
+        
+        Args:
+            container_data: Container data from Docker CLI JSON
+            
+        Returns:
+            Instance object or None if conversion fails
+        """
+        try:
+            # Extract basic info
+            container_id = container_data.get('ID', '')
+            name = container_data.get('Names', 'unknown')
+            image = container_data.get('Image', 'unknown')
+            status = container_data.get('State', 'unknown')
+            ports = container_data.get('Ports', '')
+            
+            # Parse ports to find host mapping
+            host_port = None
+            
+            # Ports format: "0.0.0.0:8000->8000/tcp"
+            for port_mapping in ports.split(', '):
+                if '->' in port_mapping and '8000' in port_mapping:
+                    # Extract host port
+                    try:
+                        host_part = port_mapping.split('->')[0]
+                        if ':' in host_part:
+                            host_port = int(host_part.split(':')[-1])
+                            break
+                    except (ValueError, IndexError):
+                        continue
+            
+            # If no port 8000, try any port
+            if not host_port:
+                for port_mapping in ports.split(', '):
+                    if '->' in port_mapping:
+                        try:
+                            host_part = port_mapping.split('->')[0]
+                            if ':' in host_part:
+                                host_port = int(host_part.split(':')[-1])
+                                break
+                        except (ValueError, IndexError):
+                            continue
+            
+            if not host_port:
+                logger.warning(f"No suitable port found for container {name}")
+                return None
+            
+            # Create instance
+            instance = Instance(
+                id=f"docker_{container_id[:12]}",
+                name=f"{name} (Docker)",
+                type=InstanceType.DOCKER,
+                host="localhost",
+                port=host_port,
+                container_id=container_id,
+                status=InstanceStatus.ONLINE if status == 'running' else InstanceStatus.OFFLINE,
+                metadata={
+                    "container_name": name,
+                    "image": image,
+                    "status": status,
+                    "ports": ports,
+                    "discovery_method": "cli"
+                }
+            )
+            
+            return instance
+            
+        except Exception as e:
+            logger.error(f"Error converting container data to instance: {e}")
+            return None
     
     async def _container_to_instance(self, container) -> Optional[Instance]:
         """
@@ -325,6 +497,9 @@ class DockerManager:
         if not self.is_available():
             return []
         
+        if self.use_cli_fallback:
+            return await self._list_containers_cli()
+        
         try:
             containers = self.client.containers.list(all=True)
             
@@ -346,4 +521,46 @@ class DockerManager:
             return []
         except Exception as e:
             logger.error(f"Error listing containers: {e}")
+            return []
+    
+    async def _list_containers_cli(self) -> List[Dict[str, Any]]:
+        """List all containers using Docker CLI."""
+        try:
+            result = subprocess.run(
+                ['docker', 'ps', '--all', '--format', 'json'],
+                capture_output=True, text=True, timeout=30
+            )
+            
+            if result.returncode != 0:
+                logger.error(f"Docker CLI ps failed: {result.stderr}")
+                return []
+            
+            container_list = []
+            for line in result.stdout.strip().split('\n'):
+                if not line.strip():
+                    continue
+                    
+                try:
+                    container_data = json.loads(line)
+                    container_list.append({
+                        "id": container_data.get('ID', ''),
+                        "short_id": container_data.get('ID', '')[:12],
+                        "name": container_data.get('Names', 'unknown'),
+                        "status": container_data.get('State', 'unknown'),
+                        "image": container_data.get('Image', 'unknown'),
+                        "is_claude": self._is_claude_container_cli(container_data)
+                    })
+                    
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse container JSON: {e}")
+                except Exception as e:
+                    logger.error(f"Error processing container data: {e}")
+            
+            return container_list
+            
+        except subprocess.TimeoutExpired:
+            logger.error("Docker CLI command timed out")
+            return []
+        except Exception as e:
+            logger.error(f"Error listing containers via CLI: {e}")
             return []
